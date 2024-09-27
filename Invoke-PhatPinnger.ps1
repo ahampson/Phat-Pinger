@@ -1,5 +1,6 @@
 ﻿Param(
-    [string]$ComputerName = 'localhost'
+    [Parameter(Position=0,mandatory=$true)]
+    [string]$ComputerName
 )
 
 $Buffer = 0
@@ -7,7 +8,10 @@ $BufferBonus = 1
 $RunningTest = $True
 $PingCounter = 0
 
-While($RunningTest){
+Write-Host "Starting Bandwith test for: $ComputerName"
+
+While($RunningTest){ 
+    Write-Progress -Activity "Pings: $PingCounter" -Status "Buffer: $Buffer" -PercentComplete $($Buffer/65535*100) -Id 1
     If(Test-Connection -ComputerName $ComputerName -BufferSize $Buffer -Count 1 -Quiet){
         $Buffer += $BufferBonus 
         $BufferBonus += 1
@@ -19,15 +23,16 @@ While($RunningTest){
             $RunningTest = $False
         }
     }else{
+        Write-Warning "Pactet Loss Detected $BufferBonus"
         If($BufferBonus -ne 1){
             $Buffer -= $BufferBonus 
-            $BufferBonus = 1
-        }
-        else{
+            $BufferBonus = 0
+        }else{
             $RunningTest = $False
         }
     }
 }
+Write-Progress -Activity "Pings: $PingCounter" -Status "Buffer: $Buffer" -Completed -Id 1
 Write-Host "Test completed with $PingCounter sucessful PING's"
 if($Buffer -ge 65500){
     Write-Host -ForegroundColor Green "Max Buffer size of $Buffer Bytes verified"
